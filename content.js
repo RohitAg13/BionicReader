@@ -34,11 +34,15 @@ function getPageContent() {
     charThreshold: 20,
   });
   const article = readability.parse();
-  return { textContent: article.textContent, content: article.content };
+  return {
+    textContent: article.textContent,
+    content: article.content,
+    title: article.title,
+  };
 }
 
 // regex to extract content between the tags
-function extractContent(content) {
+function extractText(content) {
   const regex = /<[^>]*>/g;
   const extractedContent = content.replace(regex, "");
   return extractedContent;
@@ -54,13 +58,13 @@ function makeBionic(word) {
   return "<b>" + prefix + "</b>" + suffix + " ";
 }
 
-function getBionicSentence(text) {
-  const lines = text.split("\n");
+function getBionicSentence(content) {
+  const lines = content.split("\n");
   let bionicSentences = "";
   lines.forEach((line) => {
-    let = content = extractContent(line);
-    content = new Set(content.split(" "));
-    content.forEach((word) => {
+    let text = extractText(line);
+    let words = new Set(text.split(" "));
+    words.forEach((word) => {
       let bionicWord = makeBionic(word);
       line = line.replace(word, bionicWord);
     });
@@ -73,7 +77,7 @@ chrome.runtime.onMessage.addListener(async (msg) => {
   console.log("[BionicReader] Received message:", msg.type);
   switch (msg.type) {
     case "reader": {
-      const { content, textContent } = getPageContent();
+      const { content, title } = getPageContent();
       // Reader Mode
       if (!NON_READABLE_DOMAINS.includes(new URL(location.href).hostname)) {
         console.log("[BionicReader] Updating doc");
@@ -81,7 +85,8 @@ chrome.runtime.onMessage.addListener(async (msg) => {
               <html>
                   <style type="text/css">${READER_MODE_STYLES}
                   </style>
-                  <body>${getBionicSentence(content)}
+                  <body><h1>${title}</h1>
+                  ${getBionicSentence(content)}
                   </body>
               </html>
         `;
